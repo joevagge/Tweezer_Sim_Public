@@ -24,16 +24,8 @@ import random
 
 
 # Constants
-# tdme = 2.5377e-29  # [C·m] Transition Dipole Matrix Element
 tdme = 2.992 * sc.eV* sc.physical_constants['Bohr radius'][0] # [C·m] Transition Dipole Matrix Element
-# tdme = 1
 Delta = 377.107463380 * 1e12  # [Hz], converted from THz to Hz
-Detuning1 = 2e6 #[Hz]
-Detuning2 = 6e6 #[Hz]
-Detuning3 = 12e6 #[Hz]
-Laser_Freq1 = Delta + Detuning1
-Laser_Freq2 = Delta + Detuning2
-Laser_Freq3 = Delta + Detuning3
 eps0 = sc.epsilon_0
 linewidth = 2 * sc.pi * 5.7500 * 1e6# [Hz]
 m = 59*sc.atomic_mass  
@@ -134,11 +126,89 @@ def potential_hill_time(U_f, U_i, m, separation, flattening_point):
     return T
 
 
+####### The following code produces some sample data in order to plot the interatomic PECs #######
 
-#### Motion along PEC ######
+R = np.logspace(-9,  -6, 5000)
+Detuning_1 = 50e6
+Detuning_2 = 50e6
+Detuning_3 = 50e6
+Laser_Freq_1 = D1_Freq + Detuning_1
+Laser_Freq_2 = D1_Freq + Detuning_2
+Laser_Freq_3 = D1_Freq + Detuning_3
+Laser_Frequencies = [Laser_Freq1, Laser_Freq2, Laser_Freq3]
+results = [Collision_Separation_Calculator(R, freq, Delta) for freq in Laser_Frequencies]
+SP_potential = SPPotential(Delta, CouplingPotential(R))
+PS_potential = PSPotential(Delta, CouplingPotential(R))
+SS_potential = SSPotential(Delta, CouplingPotential(R))
+colors = ['darkgreen', 'darkgreen', 'darkgreen']
+linestyles = ['solid', 'dashed', 'dotted']
 
-## This function describes rhe motion along the repulsive (blue) PEC
 
+####### Plotting Interatomic PECs with broken y-axis ###########
+chosen_linewidth = 3
+fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=True, figsize=(10, 11), dpi=500) 
+
+# Upper subplot
+ax1.plot(R * 1e6, SP_potential * 1e-12, color='blue',linewidth = chosen_linewidth)
+ax1.plot(R * 1e6, PS_potential * 1e-12, color='red',linewidth = chosen_linewidth)
+
+# Lower subplot
+ax2.plot(R * 1e6, SP_potential * 1e-12, label=f"SP $= \Delta + U$", color='blue',linewidth = chosen_linewidth)
+ax2.plot(R * 1e6, PS_potential * 1e-12, label=f"PS $= \Delta - U$", color='red',linewidth = chosen_linewidth)
+ax2.plot(R * 1e6, SS_potential * 1e-12, label=r"SS $= \Delta - \sqrt{\Delta^2 + U^2}$", color='orange',linewidth = chosen_linewidth)
+ax2.set_xlabel('Distance (µm)', fontsize=20)
+ax2.set_ylabel('Potential (THz)', fontsize=20, loc="top")
+ax2.yaxis.set_label_coords(-0.16, 1.23)
+# Set limits
+ax1.set_ylim([(1 - 3e-8) * (SP_potential[-1] * 1e-12), (1 + 3e-8) * (SP_potential[-1] * 1e-12)])  # Set limits for the upper subplot
+ax1.set_xlim([6e-2, 1])  # Set x-axis limits in micrometers
+ax2.set_ylim([-0.01, 0.04])  # Set x-axis limits for the lower subplot
+
+# Add lines for each value of detuning
+for i, (min_R, sp_potential_at_min_R, ps_potential_at_min_R, ss_potential_at_min_R) in enumerate(results):
+    detuning = Laser_Frequencies[i] - Delta
+    color = colors[i % len(colors)]  # Cycle through colors
+    linestyle = linestyles[i % len(linestyles)]  # Cycle through linestyles
+    
+    add_line_to_plot(ax1, min_R, ss_potential_at_min_R, sp_potential_at_min_R, detuning, color, linestyle, chosen_linewidth)
+    add_line_to_plot(ax2, min_R, ss_potential_at_min_R, sp_potential_at_min_R, detuning, color, linestyle, chosen_linewidth)
+    
+ax1.tick_params(axis='both', labelsize=16)
+ax2.tick_params(axis='both', labelsize=16)
+ax2.legend(loc='upper right', fontsize=16)
+ax1.get_yaxis().get_major_formatter().set_useOffset(False)
+ax1.set_xscale('log')
+ax2.set_xscale('log')
+plt.show()
+
+
+###### Same plot as above, but without page break ######
+fig, ax = plt.subplots(figsize=(10, 10))
+ax.plot(R * 1e6, SS_potential * 1e-12, label=r"SS $= \Delta - \sqrt{\Delta^2 + U^2}$", color='orange')
+ax.plot(R * 1e6, SP_potential * 1e-12, label=f"SP $= \Delta + U$", color='blue')
+ax.plot(R * 1e6, PS_potential * 1e-12, label=f"PS $= \Delta - U$", color='red')
+
+# Add wavy transition lines
+for i, (min_R, sp_potential_at_min_R, ps_potential_at_min_R, ss_potential_at_min_R) in enumerate(results):
+    detuning = Laser_Frequencies[i] - Delta
+    color = colors[i % len(colors)]  # Cycle through colors
+    linestyle = linestyles[i % len(linestyles)]  # Cycle through linestyles
+    
+    add_line_to_plot(ax, min_R, ss_potential_at_min_R, sp_potential_at_min_R, detuning, color, linestyle, chosen_linewidth)
+
+ax1.set_xlim([6e-2, 1])  # Set x-axis limits in micrometers
+plt.xlabel('Distance (µm)', fontsize=16)
+plt.ylabel('Potential (THz)', fontsize=16)
+plt.title('Potentials as a Function of Distance (R)', fontsize=18)
+plt.legend(fontsize=14)
+plt.xscale('log')
+plt.show()
+
+
+
+#### Now Modelling the dynamics of a particle moving along the PEC ######
+
+## This function describes the motion along the repulsive (blue) PEC
 def PEC_Dynamics(R_initial, v_initial, tau):
 
     delta_t = 0.1 * tau
@@ -155,9 +225,8 @@ def PEC_Dynamics(R_initial, v_initial, tau):
         a = F / m  
         v_approach += a * delta_t
         R -= v_approach * delta_t
-
         t += delta_t
-
+        
         if t > 500e-9:
             print('collision took too long')
             break        
@@ -195,7 +264,7 @@ from datetime import datetime, timedelta
 
 
 
-###### The rest of this script is used to teest the above functions ####
+###### The rest of this script is used to test the above functions ####
 
 # def PEC_Dynamics_Test(R_initial, v_initial, tau):
 #     tvalues = []
