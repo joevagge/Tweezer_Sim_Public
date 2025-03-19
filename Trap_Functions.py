@@ -6,6 +6,10 @@ Created on Tue Jul  2 14:38:09 2024
 @author: joe
 """
 
+"""
+This script holds most of the functions used in the simulation
+"""
+
 import numpy as np
 import scipy.constants as sc
 import matplotlib.pyplot as plt
@@ -243,91 +247,6 @@ def plot_Separation(num, TimeStamps, SeparationHistory_list):
     plt.tight_layout()
     plt.show()
 
-    
-
-# def plot_positions(num, PositionHistory, TotalTrapped, TimeStamps, collision_time, collision_coords, w0, collision_colour, SeparationHistory_list):
-#     fig, axs = plt.subplots(4, 1, figsize=(12, 24))  # 4 subplots now
-
-#     titles = [
-#         rf'({num}) X Position Over Time', 
-#         rf'({num}) Y Position Over Time', 
-#         rf'({num}) Z Position Over Time', 
-#         rf'({num}) Separation Distance Over Time'
-#     ]
-    
-#     y_labels = ['X Position (μm)', 'Y Position (μm)', 'Z Position (μm)', 'Separation Distance (μm)']
-
-#     # Loop through x, y, z coordinates (idx corresponds to x=0, y=1, z=2)
-#     for idx in range(3):
-#         for i in range(TotalTrapped):
-#             positions_to_plot = []
-
-#             # Ensure valid range for TimeStamps and PositionHistory
-#             for t in range(len(TimeStamps)):
-#                 # Fix indexing: Access list of particle positions at time t
-#                 if np.linalg.norm(PositionHistory[i][t]) <= 200 * w0:  # Ensure we don't plot escaped particles
-#                     positions_to_plot.append(PositionHistory[i][t][idx])  # Accessing the idx-th coordinate (x, y, or z)
-#                 else:
-#                     positions_to_plot.append(np.nan)  # Use NaN for escaped particles
-
-#             # Plot the particle positions (alternating colors)
-#             axs[idx].plot(TimeStamps, np.array(positions_to_plot) * 1e6, 
-#                           'g' if i % 2 == 0 else 'g', label=f'Particle {i+1}')
-        
-#         # Plotting collision markers (red or blue dots)
-#         for ct in collision_time:
-#             collision_idx = collision_time.index(ct)  # Get the index of the collision
-#             ct_index = np.argmin(np.abs(np.array(TimeStamps) - ct))  # Find the closest index to collision time
-        
-#             for coord in collision_coords[collision_idx]:
-#                 if np.linalg.norm(coord) <= 200 * w0:  # Ensure collisions happen within bounds
-                    
-#                     if collision_colour[collision_idx] == 'red':
-#                         axs[idx].plot(TimeStamps[ct_index], coord[idx] * 1e6, 'ro')
-#                     elif collision_colour[collision_idx] == 'blue':
-#                         axs[idx].plot(TimeStamps[ct_index], coord[idx] * 1e6, 'bo')
-
-#         # Set labels, titles, and grid for each subplot
-#         axs[idx].set_xlabel("Time (ms)")
-#         axs[idx].set_ylabel(y_labels[idx])
-#         axs[idx].set_title(titles[idx], fontsize=20, fontweight='bold')
-#         axs[idx].grid(True)
-#         axs[idx].set_ylim(-1 * w0 * 1e6, 1 * w0 * 1e6)  
-#         # axs[idx].set_xlim(0, TimeStamps[-1])
-#         if len(collision_time) > 0:
-#             axs[idx].set_xlim((collision_time[-1]) - 0.00002, (collision_time[-1]) + 0.00002)   
-#         else:
-#             axs[idx].set_xlim(0.0025- 0.00004, TimeStamps[-1])
-
-#     # Plot separation distance and add collision markers
-#     axs[3].plot(TimeStamps, np.array(SeparationHistory_list) * 1e6, label=f'Separation {i+1}')
-
-#     # Adding collision markers to the separation distance subplot
-#     for ct in collision_time:
-#         collision_idx = collision_time.index(ct)  # Get the index of the collision
-#         ct_index = np.argmin(np.abs(np.array(TimeStamps) - ct))  # Find the closest index to collision time
-
-#         if collision_colour[collision_idx] == 'red':
-#             axs[3].plot(TimeStamps[ct_index], SeparationHistory_list[ct_index] * 1e6, 'ro')
-#         elif collision_colour[collision_idx] == 'blue':
-#             axs[3].plot(TimeStamps[ct_index], SeparationHistory_list[ct_index] * 1e6, 'bo')
-
-#     # Set labels, title, and grid for the separation distance subplot
-#     axs[3].set_xlabel("Time (ms)")
-#     axs[3].set_ylabel(y_labels[3])
-#     axs[3].set_title(titles[3], fontsize=20, fontweight='bold')
-#     axs[3].grid(True)
-#     # axs[3].set_xlim(0, TimeStamps[-1])
-#     if len(collision_time) > 0:
-#         axs[3].set_xlim((collision_time[-1]) - 0.00002, (collision_time[-1]) + 0.00002)   
-#     else:
-#         axs[3].set_xlim(0.0025- 0.00004, TimeStamps[-1])
-
-#     # Adjust layout to prevent overlap
-#     plt.tight_layout()
-#     plt.show()
-
-
 
 def plot_velocities(num, VelocityHistory, TotalTrapped, TimeStamps, collision_time, collision_coords, w0, collision_colour):
     fig, axs = plt.subplots(3, 1, figsize=(12, 18))  # 3 subplots for X, Y, Z velocities
@@ -377,9 +296,6 @@ def plot_velocities(num, VelocityHistory, TotalTrapped, TimeStamps, collision_ti
 
 
 
-
-
-
 def maxwell_boltzmann_random_velocity(T, m):
     v = np.sqrt(2 * kB * T / m) * np.random.randn(3)
     return v
@@ -395,6 +311,9 @@ def OtherScatteringRate_D1(laser_freq, gamma, P, w0, R):
     detuning_factor = (gamma_D1 / (SPPotential(transition_freq, CouplingPotential(R)) - laser_freq) +
                        gamma_D1 / (SPPotential(transition_freq, CouplingPotential(R)) + laser_freq))**2
     return prefactor * lambda_ratio * (2 * P) / (sc.pi * w0**2) * detuning_factor
+
+
+#### These functions describe the scattering during light assisted collisions ###
 
 def absorption_scattering_D1(x, y, z, zR, laser_freq, P, w0, R):
     wz = w0 * np.sqrt(1 + (z / zR)**2)
@@ -454,6 +373,8 @@ def absorption_scattering_D2_Red(x, y, z, zR, laser_freq, P, w0, R):
     R_abs = (gamma_D2/2) * ( s / (1 + 4*(Delta/gamma_D2)**2))
     R_abs = R_abs * 3 * 2 # (for retro reflected beams)
     return R_abs
+
+#### These 'single atom' ones are for regular scattering events ###
 
 def absorption_scattering_D2_single_atom(x, y, z, zR, laser_freq, P, w0):
     wz = w0 * np.sqrt(1 + (z / zR)**2)    

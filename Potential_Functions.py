@@ -6,6 +6,14 @@ Created on Mon Jul 29 15:24:03 2024
 @author: joe
 """
 
+"""
+This script has two purposes:
+
+1. To calculate and plot the interatomic potential energy curves to illustrate the repulsive and attractive potentials.
+
+2. To calculate the time frame of an atom in the excited state, and thus how much kinetic energy it gains from a collision.
+"""
+
 import numpy as np 
 import scipy.constants as sc
 import matplotlib.pyplot as plt
@@ -126,69 +134,10 @@ def potential_hill_time(U_f, U_i, m, separation, flattening_point):
     return T
 
 
-# import numpy as np
-# from scipy.integrate import quad
-
-# # Constants
-# U0 = 4.106275273446083e-26
-# Delta = 377.107463380 * 10**12  # Example in Hz
-# Delta_Joules = Delta * sc.h
-# tdme = 2.992 * (1.602176634 * 10**-19) * (5.29177210903 * 10**-11)  # Dipole moment (in C·m)
-# m = 59 * 1.66053906660 * 10**-27  # Mass of the atom (kg)
-# eps0 = 8.854187817 * 10**-12  # Permittivity of free space (C^2/(N·m^2))
-
-# # Define U(R)
-# def U(R):
-#     return Delta_Joules + (1 / (4 * np.pi * eps0 * R**3)) * tdme**2
-
-# def integrand(R):
-#     return 1 / np.sqrt((2 / m) * (U(R) - U0))
-
-# R1 = 5 * 10**-8  
-
-# # Compute T for given R1 and R2
-# def calculate_T(R1, R2):
-#     integral_result, _ = quad(integrand, R1, R2)
-#     return integral_result
-
-
-# final_separation = np.linspace(2e-6,2e-4,500)
-# Timescales = []
-
-# # Calculate T
-# for R_2 in final_separation:
-#     T = calculate_T(R1, R_2)
-#     Timescales.append(T*1e9)
-
-# # Find the closest T value to target_T
-# target_T = 26
-# closest_index = np.argmin(np.abs(np.array(Timescales) - target_T))
-# R2_closest = final_separation[closest_index]
-# T_closest = Timescales[closest_index]
-
-    
-    
-# # Plot timescales vs R2
-# plt.figure(figsize=(8, 6), dpi=300)
-# plt.plot(Timescales, final_separation, label='Timescale T vs. R2')
-# plt.ylabel('Separation Distance $R_2$ (m)', fontsize=14)
-# plt.xlabel('Timescale $T$ (ns)', fontsize=14)
-# plt.title('Timescale vs Separation Distance $R_2$', fontsize=16)
-# # plt.yscale('log')  # Optional: Log scale for T if needed
-
-# plt.grid(True)
-
-# # Add marker for the closest T to target_T
-# plt.axvline(T_closest, color='red', linestyle='--', label=f'$R_2=${R2_closest:.0e}m for T={target_T} ns')
-# plt.axhline(R2_closest, color='red', linestyle='--')
-# plt.scatter(T_closest, R2_closest, color='red')
-# plt.legend()
-
-# plt.show()
-
-
 
 #### Motion along PEC ######
+
+## This function describes rhe motion along the repulsive (blue) PEC
 
 def PEC_Dynamics(R_initial, v_initial, tau):
 
@@ -207,7 +156,6 @@ def PEC_Dynamics(R_initial, v_initial, tau):
         v_approach += a * delta_t
         R -= v_approach * delta_t
 
-        # Increment time
         t += delta_t
 
         if t > 500e-9:
@@ -244,6 +192,10 @@ def PEC_Dynamics_Red(R_initial, v_initial, tau):
     return R, v_approach
 
 from datetime import datetime, timedelta
+
+
+
+###### The rest of this script is used to teest the above functions ####
 
 # def PEC_Dynamics_Test(R_initial, v_initial, tau):
 #     tvalues = []
@@ -282,11 +234,7 @@ from datetime import datetime, timedelta
 #         Rvalues.append(R)
 #         Uvalues.append(U * 1e-6)  # (in MHz)
 #         Vvalues.append(v_approach)
-        
-#         # Increment time
 #         t += delta_t
-        
-
 
 #     return tvalues, Uvalues, Rvalues, Vvalues, v_approach, end_time
 
@@ -356,6 +304,8 @@ from datetime import datetime, timedelta
 # plt.title("Distribution of Final Velocities (Excluding Outliers)")
 # plt.show()
 
+
+###### The plots below are for individual samples, it is worth running them a few times to get a sense for the variability.
 
 # # Run simulations with initial velocities
 # dist = 50e-9
