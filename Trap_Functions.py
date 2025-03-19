@@ -45,6 +45,12 @@ P_cooling = 5e-3 # Laser Power per beam [W]
 I0_tweezer = 2 * P_tweezer / (sc.pi * w0_tweezer**2)
 I0_cooling = 2 * P_cooling / (sc.pi * w0_cooling**2)
 
+def U_dip(laser_freq, gamma, I_r, transition_freq):
+    prefactor = (3 * sc.pi * sc.c**2) / (2 * (2 * sc.pi*transition_freq)**3)
+    detuning_factor = ((gamma  / ((laser_freq - transition_freq)))+(gamma / ((laser_freq + transition_freq))))
+    U_dip_value = - prefactor * detuning_factor * I_r
+    return U_dip_value
+
 U0_D1 = U_dip(tweezer_freq, gamma_D1 , I0_tweezer, D1_Freq)
 U0_D2 = U_dip(tweezer_freq, gamma_D2, I0_tweezer, D2_Freq)
 U0 = U0_D1 + U0_D2
@@ -55,12 +61,6 @@ TrapFreq = np.sqrt(4 * U0 / (m * w0_tweezer**2))
 PosStdDev = np.sqrt((sc.k * Temp )/(m * TrapFreq**2 )) 
 
 maxDeltaT = w0_tweezer/(0.25*30)
-
-def U_dip(laser_freq, gamma, I_r, transition_freq):
-    prefactor = (3 * sc.pi * sc.c**2) / (2 * (2 * sc.pi*transition_freq)**3)
-    detuning_factor = ((gamma  / ((laser_freq - transition_freq)))+(gamma / ((laser_freq + transition_freq))))
-    U_dip_value = - prefactor * detuning_factor * I_r
-    return U_dip_value
 
 def AccelVec(PosVec, VelVec, beta, U0, zR, w0, m):
     x, y, z = PosVec
