@@ -9,9 +9,13 @@ Created on Fri Jul  5 16:18:40 2024
 """
 This script is used to run the simulation for a given laser detuning.
 
-Set the Detuning, and the number of simulation iterations (num_runs).
+Key Parameters:
+- Detuning: Laser detuning in Hz.
+- num_runs: Number of simulation iterations.
 
-The script then produces some plots to characterise the system.
+Outputs:
+- Plots: Histograms of trap occupation, collision times, etc.
+- Data: Results stored in lists (e.g., `results`, `collision_times`).
 
 There are many possible plots to output, depending on what data is required. Simply uncomment the desired sections. 
 """

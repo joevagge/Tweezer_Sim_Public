@@ -7,11 +7,13 @@ Created on Mon Jul 29 15:24:03 2024
 """
 
 """
-This script has two purposes:
+This script calculates and plots interatomic potential energy curves (PECs) for atoms in a tweezer trap.
 
-1. To calculate and plot the interatomic potential energy curves to illustrate the repulsive and attractive potentials.
 
-2. To calculate the time frame of an atom in the excited state, and thus how much kinetic energy it gains from a collision.
+Key Functions:
+- CouplingPotential(R): Calculates the coupling potential at distance R.
+- PEC_Dynamics(R_initial, v_initial, tau): Simulates motion along the PEC.
+
 """
 
 import numpy as np 

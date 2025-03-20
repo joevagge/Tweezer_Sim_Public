@@ -13,7 +13,14 @@ import os
 import sys
 
 """
-This script is used to run the simulation over a range of Detunings
+This script runs the simulation over a range of laser detunings.
+
+Key Parameters:
+- Detunings: Array of detuning values to simulate.
+- num_runs: Number of iterations per detuning.
+
+Outputs:
+- Data: Saved to a .npz file (e.g., `Scan_Data/neg200to400.npz`).
 """
 
 
