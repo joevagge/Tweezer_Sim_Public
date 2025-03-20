@@ -11,12 +11,18 @@ import time
 from multiprocessing import Pool, Manager
 import os
 import sys
-file_name = 'Scan_Data/neg200to400.npz'
+
+"""
+This script is used to run the simulation over a range of Detunings
+"""
+
+
+file_name = 'Scan_Data/neg200to400.npz' 
+
 if os.path.exists(file_name):
     print(f"Error: '{file_name}' already exists. Choose another file name.")
-    sys.exit(1)  # Exit the program with a non-zero status to indicate an error
+    sys.exit(1)  
 
-# Constants
 Detunings = np.arange(-200, 400e6, 5e6)
 num_runs = 250
 
@@ -25,7 +31,6 @@ def run_simulation_for_params(params, progress_counter):
     results = []
     collision_counts = []
 
-    # Perform simulations
     for i in range(num_runs):
         within_beam_waist_count, _, _, _, _, _, _, collision_count, _, _, _, _, _, _, _, _, _ = run_simulation(Detuning)
         results.append(within_beam_waist_count)
@@ -36,22 +41,18 @@ def run_simulation_for_params(params, progress_counter):
 
 def wrapper_run_simulation(params_and_counter):
     params, progress_counter = params_and_counter
-    # Run simulation and return results
     return run_simulation_for_params(params, progress_counter)
 
 def main():
-    # Initialize manager and progress counter
     manager = Manager()
     progress_counter = manager.Value('i', 0)
     
-    # Prepare parameters for the pool
     params = [(Detuning, num_runs) for Detuning in Detunings] 
     total_simulations = len(params) * num_runs
 
     start_time = time.time()
-    last_printed = 0  # Initialize the last printed counter
-    
-    # Debugging without multiprocessing
+    last_printed = 0  
+
     results_list = []
     for param in params:
         results, collision_counts = run_simulation_for_params(param, progress_counter)
@@ -74,9 +75,8 @@ def main():
             print(f"Estimated Finish Time: {finish_time}")
             print(f"Time Remaining: {int(hours)}:{int(minutes)}:{int(seconds)}")
             
-            last_printed = completed_simulations  # Update the last printed counter
+            last_printed = completed_simulations  
 
-    # Process results after execution
     no_atom_likelihoods = []
     one_atom_likelihoods = []
     two_atom_likelihoods = []
@@ -93,7 +93,6 @@ def main():
         two_atom_likelihoods.append(two_atom_likelihood)
         mean_occupations.append(mean_occupation)
 
-        # Ensure collision_counts is a flat list
         if isinstance(collision_counts[0], (list, np.ndarray)):
             collision_counts_flat = [item for sublist in collision_counts for item in sublist]
         else:
@@ -102,7 +101,6 @@ def main():
         mean_collisions = np.mean(collision_counts_flat)
         average_number_of_collisions.append(mean_collisions)
 
-    # Convert results to numpy arrays
     Detunings_arr = np.array(Detunings)
     no_atom_likelihoods_arr = np.array(no_atom_likelihoods)
     one_atom_likelihoods_arr = np.array(one_atom_likelihoods)
@@ -110,13 +108,11 @@ def main():
     mean_occupations_arr = np.array(mean_occupations)
     average_number_of_collisions_arr = np.array(average_number_of_collisions)
     
-    # Parameter names and corresponding values
     param_names = [
         "Iterations",
         "Initial Particle Temp",
         "Trap Depth",
         "Trap Width",
-        # "Initial No. of Particles",
         "Time Span",
         "Initial Position StdDev",
         "Damping Coefficient"
@@ -127,7 +123,6 @@ def main():
         f"{Temp * 1e6:.2f} $\mu$K",
         f"{np.round(Trap_Depth_mK, 3)} mK / {np.round(Trap_Depth_MHz, 3)} MHz",
         f"{w0_tweezer * 1e6:.2f} $\mu$m",
-        # f"{np.average(total_trapped_list):.2f} $\pm$1",
         f"{ActualTime*1e3} ms",
         f"{PosStdDev * 1e6:.2f} $\mu$m",
         f"{beta:.0e} Kg/s ({(m/(beta+1e-30))*1e6:.0f} $\mu$s)"
