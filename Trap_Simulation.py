@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul  5 16:18:40 2024
+
+@author: joe v
+"""
 
 import numpy as np 
 import scipy.constants as sc
@@ -11,25 +18,14 @@ COMvelocities = []
 broadened_detunings = []
 scattering_rates = []
 scattering_rates_red = []
-# collision_colour = []
 successful_scattering_rates = []
 Initial_Positions_Record = []
 Initial_Velocities_Record = []
 Total_Trapped_Record = []
 Detuning_record = []
 Doppler_Shifted_Freq_record = []
-
-
 Scattering_Dist = []
 Timestep_Dist = []
-
-
-
-def apply_position_threshold(position, threshold=1e-4):
-    norm = np.linalg.norm(position)
-    if norm > threshold:
-        position = (position / norm) * threshold  # Scale the position to be at the threshold
-    return position
 
 def run_simulation(Detuning):
         
@@ -47,25 +43,7 @@ def run_simulation(Detuning):
     Laser_lamda = sc.c /Laser_Freq
     zR_cooling = sc.pi * w0_cooling**2 * Laser_Freq / sc.c
     k = 2 * sc.pi / Laser_Freq
-    
-    # Define cut off point
-    R_range = np.logspace(-6, -7.6, 1000)
         
-    # if Detuning < 0:
-    #     absorption_values = np.array([absorption_scattering_D1_Red(0, 0, 0, zR_cooling, Laser_Freq, P_cooling, w0_cooling, R) + absorption_scattering_D2_Red(0, 0, 0, zR_cooling, Laser_Freq, P_cooling, w0_cooling, R) for R in R_range])
-    #     absorption_max = max(absorption_values_Red)
-    #     absorption_min = absorption_values_Red[0]
-    #     R_max_absorption = R_range[np.argmax(absorption_values_Red)]
-    #     condition = ((absorption_values_Red - absorption_min) <= 0.01 * (absorption_max - absorption_min)) & (R_range > R_max_absorption)
-    #     R_cut_off = R_range[np.where(condition)[0][-1]]
-    # else:
-    #     absorption_values = np.array([absorption_scattering_D1(0, 0, 0, zR_cooling, Laser_Freq, P_cooling, w0_cooling, R) + absorption_scattering_D2(0, 0, 0, zR_cooling, Laser_Freq, P_cooling, w0_cooling, R) for R in R_range])
-    #     absorption_max = max(absorption_values)
-    #     absorption_min = absorption_values[0]
-    #     R_max_absorption = R_range[np.argmax(absorption_values)]
-    #     condition = ((absorption_values - absorption_min) <= 0.01 * (absorption_max - absorption_min)) & (R_range > R_max_absorption)
-    #     R_cut_off = R_range[np.where(condition)[0][-1]]
-    
     TimeStamps = []
     
     collision_count = 0
@@ -81,7 +59,6 @@ def run_simulation(Detuning):
 
     # Initialize number of trapped particles
     TotalTrapped = np.random.choice([1, 2], size=1, p=[0.5, 0.5])[0]
-    # TotalTrapped = 2
 
     # Initialize positions and velocities
     TweezerPosDist = np.random.normal(0, PosStdDev, (TotalTrapped, 3)) 
@@ -95,9 +72,7 @@ def run_simulation(Detuning):
     PositionHistory = [[] for _ in range(TotalTrapped)]
     VelocityHistory = [[] for _ in range(TotalTrapped)]
     SeparationHistory = []
-    
-    # time_dict["init"] = time.time() - init_start_time
-    
+        
     while CurrentTime < ActualTime:
         
         DeltaT = maxDeltaT
@@ -111,11 +86,10 @@ def run_simulation(Detuning):
             break
         
         if TotalTrapped < 2:
-            # DeltaT = maxDeltaT
             SeparationHistory.append(np.nan)
 
         else:
-            distances = np.linalg.norm(TweezerPosDist[:, np.newaxis] - TweezerPosDist, axis=2)
+            distances = np.linalg.norm(TweezerPosDist[:, np.newaxis] - TweezerPosDist, axis=2)  # These are the separation distances between pairs of atoms
             Coupling_Potentials = CouplingPotential(distances)
             close_pairs = np.argwhere((distances < 7.5e-4) & (distances > 0))
             
@@ -129,41 +103,39 @@ def run_simulation(Detuning):
                 COMvelocity = (TweezerVelDist[i] + TweezerVelDist[j]) / 2
                 COMvelocities.append(COMvelocity)
                 
-                # if i < j and distances[i, j] < R_cut_off :
                 if i < j and Coupling_Potentials[i, j] > gamma_D2:
                     
-                    COMvelocity_normal = np.linalg.norm(COMvelocity)
+                    COMvelocity_normal = np.linalg.norm(COMvelocity) # Centre of masss velocity
                     Doppler_Shifted_Freq = doppler_shift(Laser_Freq, COMvelocity_normal)
                     Doppler_Shifted_Freq_record.append(Doppler_Shifted_Freq)
-                    Detuning = Doppler_Shifted_Freq - D1_Freq
+                    Detuning = Doppler_Shifted_Freq - D1_Freq # Detuning from transition frequency
                     
                     Detuning_record.append(Detuning)
-                    potential_at_center = potential(0, 0, 0, w0_tweezer, zR_tweezer, U0)/ sc.h
-                    detuning_i = Detuning - (potential_at_center - potential(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], w0_tweezer, zR_tweezer, U0)/ sc.h)
+                    potential_at_center = potential(0, 0, 0, w0_tweezer, zR_tweezer, U0)/ sc.h  # The tweezer potential at the. entre of the trap
+                    detuning_i = Detuning - (potential_at_center - potential(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], w0_tweezer, zR_tweezer, U0)/ sc.h) # i and j here are the two atoms in a given pair
                     detuning_j = Detuning - (potential_at_center - potential(TweezerPosDist[j][0], TweezerPosDist[j][1], TweezerPosDist[j][2], w0_tweezer, zR_tweezer, U0)/ sc.h)
-                    average_detuning = (detuning_i + detuning_j) / 2
+                    average_detuning = (detuning_i + detuning_j) / 2  # The detuning experienced by an atom depends on where in the trap it lies, so may be different for each
                     
                     avg_position = (TweezerPosDist[i] + TweezerPosDist[j]) / 2
                     D1_scattering = absorption_scattering_D1(avg_position[0], avg_position[1], avg_position[2], zR_cooling, Laser_Freq, P_cooling, w0_cooling, distances[i, j])
                     D2_scattering = absorption_scattering_D2(avg_position[0], avg_position[1], avg_position[2], zR_cooling, Laser_Freq, P_cooling, w0_cooling, distances[i, j])
-                    Absorption_Scattering = D1_scattering + D2_scattering
+                    Absorption_Scattering = D1_scattering + D2_scattering # This is for the scattering onto the repulsive (blue) potential
                     
                     D1_scattering_red = absorption_scattering_D1_Red(avg_position[0], avg_position[1], avg_position[2], zR_cooling, Laser_Freq, P_cooling, w0_cooling, distances[i, j])
                     D2_scattering_red = absorption_scattering_D2_Red(avg_position[0], avg_position[1], avg_position[2], zR_cooling, Laser_Freq, P_cooling, w0_cooling, distances[i, j])
-                    Absorption_Scattering_red = D1_scattering_red + D2_scattering_red           
+                    Absorption_Scattering_red = D1_scattering_red + D2_scattering_red    # This is for the scattering onto the attractive (red) potential        
                     
                     DeltaT = min(0.1 / Absorption_Scattering, 0.1 / Absorption_Scattering_red, maxDeltaT)
-                    # DeltaT = min(0.1 / Absorption_Scattering, 0.1 / Absorption_Scattering_red)
                     Timestep_Dist.append(DeltaT)
                     
                     scattering_rates.append(Absorption_Scattering)
                     scattering_rates_red.append(Absorption_Scattering_red)
                                                         
-                    if  (len(collision_time) == 0 or CurrentTime - collision_time[-1] > decay_time):
+                    if  (len(collision_time) == 0 or CurrentTime - collision_time[-1] > decay_time):  # The time between collisions cannot be shorter than the decay time
                         p = random.uniform(0,1)
                         
                         biggest_scattering = max(Absorption_Scattering, Absorption_Scattering_red)
-                        if p < biggest_scattering * DeltaT:
+                        if p < biggest_scattering * DeltaT:  # This probabilistically determines if a scattering event occurs 
                             start_collision = time.time()
                             collision_count += 1
                             collision_time.append(CurrentTime)
@@ -183,15 +155,15 @@ def run_simulation(Detuning):
                             TweezerVelDist[j] += old_approach_vector / 2
                             
                             p = random.uniform(0,1)
-                            if p < Absorption_Scattering_red/(Absorption_Scattering+Absorption_Scattering_red):
+                            if p < Absorption_Scattering_red/(Absorption_Scattering+Absorption_Scattering_red): # Determines if the scattering event is 
                                 R, v_approach = PEC_Dynamics_Red(distance, approach_velocity, Natural_Decay_Time)
                                 collision_colour.append('red')
                             else:
                                 R, v_approach = PEC_Dynamics(distance, approach_velocity, Natural_Decay_Time)
                                 collision_colour.append('blue')                   
                             
-                            a = 0.5 #random.uniform(0,1) #0.5
-                            b = 0.5 #1 - a #0.5
+                            a = 0.5 # This determines how the kinetic energy kick is distributed between the atoms.
+                            b = 0.5 # Currently set to 50/50, can also set a = random.uniform(0,1), and b = 1 - a
                             
                             new_approach_vector = v_approach * separation_unit_vector
                             TweezerVelDist[i] += new_approach_vector * a
@@ -201,10 +173,8 @@ def run_simulation(Detuning):
 
                             TweezerPosDist[i] += TweezerVelDist[i] * DeltaT + kick
                             TweezerPosDist[j] += TweezerVelDist[j] * DeltaT + kick
-                            
-                # else:
-                    
-        for i in range(TotalTrapped):
+                                             
+        for i in range(TotalTrapped):  # Single atom scattering events
                
             D1_single_scattering = absorption_scattering_D1_single_atom(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], zR_cooling, Laser_Freq, P_cooling, w0_cooling)
             D2_single_scattering = absorption_scattering_D2_single_atom(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], zR_cooling, Laser_Freq, P_cooling, w0_cooling)

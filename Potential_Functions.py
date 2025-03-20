@@ -27,7 +27,7 @@ import random
 tdme = 2.992 * sc.eV* sc.physical_constants['Bohr radius'][0] # [C·m] Transition Dipole Matrix Element
 Delta = 377.107463380 * 1e12  # [Hz], converted from THz to Hz
 eps0 = sc.epsilon_0
-linewidth = 2 * sc.pi * 5.7500 * 1e6# [Hz]
+linewidth = 2 * sc.pi * 5.7500 * 1e6  # [Hz]
 m = 59*sc.atomic_mass  
 
 # Define the CouplingPotential function in Hz
@@ -226,7 +226,7 @@ def PEC_Dynamics(R_initial, v_initial, tau):
         v_approach += a * delta_t
         R -= v_approach * delta_t
         t += delta_t
-        
+
         if t > 500e-9:
             print('collision took too long')
             break        
