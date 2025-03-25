@@ -66,6 +66,7 @@ PosStdDev = np.sqrt((sc.k * Temp )/(m * TrapFreq**2 ))
 
 maxDeltaT = w0_tweezer/(0.25*30)
 
+# This is the main function which describes the motion of an atom due to the force imparted by the trap potential
 def AccelVec(PosVec, VelVec, beta, U0, zR, w0, m):
     x, y, z = PosVec
     vxt, vyt, vzt = VelVec
@@ -94,26 +95,14 @@ def AccelVec(PosVec, VelVec, beta, U0, zR, w0, m):
     # Compute acceleration components
     accel_x = -(1/m) * (beta * vxt + (4 * U0 * x) / denominator)
     accel_y = -(1/m) * (beta * vyt + (4 * U0 * y) / denominator)
-    # accel_z = -(1/m) * (beta * vzt + (4 * U0 * z) / denominator)
 
     term1 = (4 * U0 * (x**2 + y**2) * z) / zdenominator1  
     term2 = (2 * U0 * z) / zdenominator2                   
     accel_z = -(1/m) * (beta * vzt - term1 + term2)    
     
     return np.array([accel_x, accel_y, accel_z])
-
-
-def DetuningKEVelocity(Detuning, m):
-    phi = np.random.uniform(0, 2 * np.pi)
-    theta = np.arccos(np.random.uniform(-1, 1))  
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = np.cos(theta)
-    
-    direction = np.array([x, y, z])
-    magnitude = np.sqrt(np.abs(2 * h * Detuning / m))
-    return magnitude * direction
  
+# This fucntion describes the small kinetic energy kick imparted on an atom upon absorbing a photon
 def AbsorptionEventKick(k, m):
 
     phi = np.random.uniform(0, 2 * sc.pi) 
@@ -129,7 +118,8 @@ def AbsorptionEventKick(k, m):
     return magnitude * np.array([x, y, z])
 
 
-
+# This is used to provide plots of the position of a particle as a function of time
+# It is informative to see the particle oscillating in the trap, and to see a jolt in its motion after a collision
 def plot_positions(num, PositionHistory, TotalTrapped, TimeStamps, collision_time, collision_coords, w0, collision_colour, SeparationHistory_list, scattering_times, scattering_coords):
     fig, axs = plt.subplots(4, 1, figsize=(12, 24), dpi = 300)  # 4 subplots now
 
@@ -171,15 +161,6 @@ def plot_positions(num, PositionHistory, TotalTrapped, TimeStamps, collision_tim
                     pos_at_collision = PositionHistory[i][ct_index][idx] * 1e6
                     color = 'ro' if collision_colour[collision_idx] == 'red' else 'bo'
                     axs[idx].plot(ct, pos_at_collision, color)
-                    
-        # for ct in scattering_times:
-        #     if x_min <= ct <= x_max:  # Only plot collisions within x-limit
-        #         collision_idx = scattering_times.index(ct)
-        #         ct_index = np.argmin(np.abs(np.array(TimeStamps) - ct))  # Closest index to collision time
-        #         if ct_index in filtered_indices:
-        #             pos_at_collision = PositionHistory[i][ct_index][idx] * 1e6
-        #             color = 'yo' 
-        #             axs[idx].plot(ct, pos_at_collision, color)
 
         # Add titles, labels, grid, and y-axis limits
         axs[idx].set_xlabel("Time (ms)")
@@ -220,6 +201,7 @@ def plot_positions(num, PositionHistory, TotalTrapped, TimeStamps, collision_tim
     plt.tight_layout()
     plt.show()
     
+# Plots the separation between a given set of particles as a function of time
 def plot_Separation(num, TimeStamps, SeparationHistory_list):
     # Create a single plot
     fig, ax = plt.subplots(1, 1, figsize=(12, 8), dpi=300)
@@ -247,7 +229,7 @@ def plot_Separation(num, TimeStamps, SeparationHistory_list):
     plt.tight_layout()
     plt.show()
 
-
+# Plots the velocity of particles as a function of time
 def plot_velocities(num, VelocityHistory, TotalTrapped, TimeStamps, collision_time, collision_coords, w0, collision_colour):
     fig, axs = plt.subplots(3, 1, figsize=(12, 18))  # 3 subplots for X, Y, Z velocities
 
@@ -295,41 +277,34 @@ def plot_velocities(num, VelocityHistory, TotalTrapped, TimeStamps, collision_ti
     plt.show()
 
 
-
+# MAxwell Boltzman distribution used to set the intial velocities of the particles based on the temperature of the atoms 
 def maxwell_boltzmann_random_velocity(T, m):
     v = np.sqrt(2 * kB * T / m) * np.random.randn(3)
     return v
 
+# This is mostly just used to ccreate the 3D graphic of the potential in Master.py
 def potential(x, y, z, w0, zR, U0):
     w_z = w0 * np.sqrt(1 + (z / zR)**2)
     intensity = (w0 / w_z)**2 * np.exp(-2 * (x**2 + y**2) / w_z**2)
     return -U0 * intensity
 
-def OtherScatteringRate_D1(laser_freq, gamma, P, w0, R):
-    prefactor = (3 * sc.pi * sc.c**2) / (2 * 2 * sc.pi*D1_Freq**3 * h / (2 * sc.pi))
-    lambda_ratio = (laser_freq / D1_Freq)**3
-    detuning_factor = (gamma_D1 / (SPPotential(transition_freq, CouplingPotential(R)) - laser_freq) +
-                       gamma_D1 / (SPPotential(transition_freq, CouplingPotential(R)) + laser_freq))**2
-    return prefactor * lambda_ratio * (2 * P) / (sc.pi * w0**2) * detuning_factor
 
 
-#### These functions describe the scattering during light assisted collisions ###
+#### These functions describe the scattering during light assisted collisions (to the D1 and D2 lines in Rubidium) ###
 
+# To the repulsive (blue) branch of the D1 line
 def absorption_scattering_D1(x, y, z, zR, laser_freq, P, w0, R):
     wz = w0 * np.sqrt(1 + (z / zR)**2)
     I_sat = (sc.pi * sc.h * sc.c * gamma_D1 * D1_Freq **3) / (3 * sc.c**3) 
-    # print(rf'I_sat ={I_sat:.1e}')
     I0 = 2 * P / (sc.pi * w0**2)  
-    # print(rf'I0 = {I0:.1e}')
     I = I0 * (w0 / wz)**2 * np.exp((-2 * (x**2 + y**2)) / wz**2)    
     s = I / I_sat  
-    # print(rf's 2 = {s:.1e}')
     Delta = laser_freq - SPPotential(D1_Freq, CouplingPotential(R)) 
-    # print(rf'Delta 1 Blue= {Delta:.1e}')
     R_abs = (gamma_D1/2) * ( s / (1 + 4*(Delta/gamma_D1)**2))
     R_abs = R_abs * 3 * 2 # (for retro reflected beams)
     return R_abs
 
+# To the repulsive (blue) branch of the D2 line
 def absorption_scattering_D2(x, y, z, zR, laser_freq, P, w0, R):
     wz = w0 * np.sqrt(1 + (z / zR)**2)    
     I_sat = (sc.pi * sc.h * sc.c * gamma_D2 * D2_Freq **3) / (3 * sc.c**3) 
@@ -344,6 +319,7 @@ def absorption_scattering_D2(x, y, z, zR, laser_freq, P, w0, R):
     R_abs = R_abs * 3 * 2 # (for retro reflected beams)
     return R_abs
 
+# To the attractive branch of the D1 line
 def absorption_scattering_D1_Red(x, y, z, zR, laser_freq, P, w0, R):
     wz = w0 * np.sqrt(1 + (z / zR)**2)    
     I_sat = (sc.pi * sc.h * sc.c * gamma_D1 * D1_Freq **3) / (3 * sc.c**3) 
@@ -359,6 +335,7 @@ def absorption_scattering_D1_Red(x, y, z, zR, laser_freq, P, w0, R):
     R_abs = R_abs * 3 * 2 # (for retro reflected beams)
     return R_abs 
 
+# To the attractive branch of the D2 line
 def absorption_scattering_D2_Red(x, y, z, zR, laser_freq, P, w0, R):
     wz = w0 * np.sqrt(1 + (z / zR)**2)    
     I_sat = (sc.pi * sc.h * sc.c * gamma_D2 * D2_Freq **3) / (3 * sc.c**3) 

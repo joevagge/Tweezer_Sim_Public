@@ -78,6 +78,8 @@ def run_simulation(Detuning):
         DeltaT = maxDeltaT
         
         StepCounter = StepCounter +1 
+
+        # Error message for stuck code
         if StepCounter > 1e7:  
             print(rf"StepCounter capped at {CurrentTime*1e3:.3f}ms . Exiting simulation.")
             end_time = datetime.now() - start_time
@@ -89,10 +91,13 @@ def run_simulation(Detuning):
             SeparationHistory.append(np.nan)
 
         else:
+
+            # This section describes the atoms in pairs
             distances = np.linalg.norm(TweezerPosDist[:, np.newaxis] - TweezerPosDist, axis=2)  # These are the separation distances between pairs of atoms
             Coupling_Potentials = CouplingPotential(distances)
             close_pairs = np.argwhere((distances < 7.5e-4) & (distances > 0))
             
+            # For each pair, we measure some parameters and analyse the dynamics
             for pair in close_pairs:
                 
                 i, j = pair
@@ -100,18 +105,23 @@ def run_simulation(Detuning):
                 if i < j:
                     SeparationHistory.append(distances[i, j])
                 
+                # Logging the centre of mass velocities
                 COMvelocity = (TweezerVelDist[i] + TweezerVelDist[j]) / 2
                 COMvelocities.append(COMvelocity)
                 
+                # Selecting the pairs which are close enough such that the coupling potential is greater than the linewidth of the D2 transition
+                # This is the regime where we consider the excitation to involve two atoms, and hence light assisted collisions
+
                 if i < j and Coupling_Potentials[i, j] > gamma_D2:
                     
+                    # First we calaculate the relevant metrics for a pair of atoms
                     COMvelocity_normal = np.linalg.norm(COMvelocity) # Centre of masss velocity
                     Doppler_Shifted_Freq = doppler_shift(Laser_Freq, COMvelocity_normal)
                     Doppler_Shifted_Freq_record.append(Doppler_Shifted_Freq)
                     Detuning = Doppler_Shifted_Freq - D1_Freq # Detuning from transition frequency
                     
                     Detuning_record.append(Detuning)
-                    potential_at_center = potential(0, 0, 0, w0_tweezer, zR_tweezer, U0)/ sc.h  # The tweezer potential at the. entre of the trap
+                    potential_at_center = potential(0, 0, 0, w0_tweezer, zR_tweezer, U0)/ sc.h  # The tweezer potential at the centre of the trap
                     detuning_i = Detuning - (potential_at_center - potential(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], w0_tweezer, zR_tweezer, U0)/ sc.h) # i and j here are the two atoms in a given pair
                     detuning_j = Detuning - (potential_at_center - potential(TweezerPosDist[j][0], TweezerPosDist[j][1], TweezerPosDist[j][2], w0_tweezer, zR_tweezer, U0)/ sc.h)
                     average_detuning = (detuning_i + detuning_j) / 2  # The detuning experienced by an atom depends on where in the trap it lies, so may be different for each
@@ -130,10 +140,12 @@ def run_simulation(Detuning):
                     
                     scattering_rates.append(Absorption_Scattering)
                     scattering_rates_red.append(Absorption_Scattering_red)
-                                                        
+                    
+                    # If enough time has passed since the last collision, we now consider another collision                                    
                     if  (len(collision_time) == 0 or CurrentTime - collision_time[-1] > decay_time):  # The time between collisions cannot be shorter than the decay time
                         p = random.uniform(0,1)
                         
+                        # This section is all about two atom scattering events, or light assisted collisions
                         biggest_scattering = max(Absorption_Scattering, Absorption_Scattering_red)
                         if p < biggest_scattering * DeltaT:  # This probabilistically determines if a scattering event occurs 
                             start_collision = time.time()
@@ -155,8 +167,8 @@ def run_simulation(Detuning):
                             TweezerVelDist[j] += old_approach_vector / 2
                             
                             p = random.uniform(0,1)
-                            if p < Absorption_Scattering_red/(Absorption_Scattering+Absorption_Scattering_red): # Determines if the scattering event is 
-                                R, v_approach = PEC_Dynamics_Red(distance, approach_velocity, Natural_Decay_Time)
+                            if p < Absorption_Scattering_red/(Absorption_Scattering+Absorption_Scattering_red): # Determines if the scattering event is repulsive or attractive
+                                R, v_approach = PEC_Dynamics_Red(distance, approach_velocity, Natural_Decay_Time) # The dynamics along the PEC are determined by this function, this includes the decay time and the amount of kinetic energy acquired.
                                 collision_colour.append('red')
                             else:
                                 R, v_approach = PEC_Dynamics(distance, approach_velocity, Natural_Decay_Time)
@@ -173,15 +185,16 @@ def run_simulation(Detuning):
 
                             TweezerPosDist[i] += TweezerVelDist[i] * DeltaT + kick
                             TweezerPosDist[j] += TweezerVelDist[j] * DeltaT + kick
-                                             
-        for i in range(TotalTrapped):  # Single atom scattering events
+        
+        # This section is for single atom scattering events, effectively the damping force                                    
+        for i in range(TotalTrapped): 
                
-            D1_single_scattering = absorption_scattering_D1_single_atom(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], zR_cooling, Laser_Freq, P_cooling, w0_cooling)
+            D1_single_scattering = absorption_scattering_D1_single_atom(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], zR_cooling, Laser_Freq, P_cooling, w0_cooling) # Some scttering along the D1 line may be possible, but this is negligible
             D2_single_scattering = absorption_scattering_D2_single_atom(TweezerPosDist[i][0], TweezerPosDist[i][1], TweezerPosDist[i][2], zR_cooling, Laser_Freq, P_cooling, w0_cooling)
             single_scattering = D1_single_scattering + D2_single_scattering
         
             DeltaT = min(0.1 / single_scattering, maxDeltaT)
-                
+
             if  (len(scattering_times) == 0 or CurrentTime - scattering_times[-1] > decay_time):
                 p = random.uniform(0,1)
                 if p < single_scattering * DeltaT:
@@ -199,7 +212,7 @@ def run_simulation(Detuning):
             VelocityHistory[i].append(TweezerVelDist[i].copy())
             
         
-        
+        # Update the timestep
         CurrentTime += DeltaT
         TimeStamps.append(CurrentTime)
         
@@ -212,6 +225,7 @@ def run_simulation(Detuning):
     # Store final positions
     final_positions = TweezerPosDist.copy()
 
+    # within_beam_waist_count is a count of how many atoms are left in the trap
     within_beam_waist_count = np.sum(np.linalg.norm(final_positions, axis=1) <= 1.5 * w0_tweezer)
     end_time = datetime.now() - start_time
     print(success, end_time)

@@ -116,9 +116,7 @@ average_particles_left_even = np.mean(even_trapped_results)
 average_particles_left_odd = np.mean(odd_trapped_results)
 
 
-
-
-
+##### Output Parameters  #####
 totaltime = time.time() - start_time
 hours, remainder = divmod(totaltime, 3600)
 minutes, seconds = divmod(remainder, 60)
@@ -164,6 +162,10 @@ parameters = [
 param_text = "\n".join(parameters)
 
 
+################# ----- PLOTS ------ ###########################
+
+
+
 ###### Main Histogram #######
 
 ## This is the baseline histogram, it shows the distribution of number of atoms remaining, and prints some important parameters
@@ -176,10 +178,6 @@ axs[1].text(0.1, 0.5, param_text, fontsize=18, verticalalignment='center', fontf
 axs[1].axis('off')
 plt.tight_layout()
 plt.show()
-
-
-
-
 
 
 ######## Even vs Odd Histogram ######## 
